@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Review Board - Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .code-block {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 10px;
+            border-left: 4px solid #ffc107;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            padding: 10px;
+            border-left: 4px solid #28a745;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Design Review Board - Automation Demo</h1>
+    
+    <div class="demo-section">
+        <h2>How the Automation Works</h2>
+        <p>Your design review board now automatically detects new theme folders and creates sections for them!</p>
+        
+        <div class="highlight">
+            <strong>Current Assets Structure:</strong><br>
+            📁 assets/<br>
+            ├── 📁 theme1/ (5 images)<br>
+            ├── 📁 theme2/ (2 images)<br>
+            └── 📁 theme3/ (newly created!)
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Adding a New Theme</h2>
+        <p>To add a new theme, simply:</p>
+        <ol>
+            <li>Create a new folder in the <code>assets</code> directory</li>
+            <li>Add your design images to that folder</li>
+            <li>Run the build script</li>
+        </ol>
+        
+        <div class="code-block"># Create a new theme folder
+mkdir assets/theme4
+
+# Add your images
+# (copy your design files to assets/theme4/)
+
+# Build the HTML
+npm run build
+# or
+node build.js
+# or double-click build.bat (Windows)</div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Customization</h2>
+        <p>You can customize theme descriptions and settings in <code>config.js</code>:</p>
+        
+        <div class="code-block">// In config.js
+themeDescriptions: {
+  'theme1': 'Classic designs with modern elements',
+  'theme2': 'Bold colours with shapes and design-tool based design',
+  'theme3': 'Minimalist approach with focus on typography',
+  'theme4': 'Your custom description here',
+  // Add more themes as needed
+}</div>
+    </div>
+
+    <div class="demo-section">
+        <h2>Features</h2>
+        <ul>
+            <li>✅ <strong>Automatic Theme Detection</strong> - Creates sections for each folder</li>
+            <li>✅ <strong>Interactive Feedback</strong> - Like, dislike, and comment on designs</li>
+            <li>✅ <strong>Lightbox View</strong> - Click designs to view full-size</li>
+            <li>✅ <strong>Theme Statistics</strong> - Shows most/least liked designs</li>
+            <li>✅ <strong>Persistent Storage</strong> - All feedback saved in browser</li>
+            <li>✅ <strong>Responsive Design</strong> - Works on all devices</li>
+        </ul>
+    </div>
+
+    <div class="success">
+        <strong>🎉 Success!</strong> Your design review board is now fully automated. 
+        Just add new theme folders to <code>assets/</code> and run the build script to see them appear!
+    </div>
+
+    <div class="demo-section">
+        <h2>Next Steps</h2>
+        <p>Try it out:</p>
+        <ol>
+            <li>Add some actual image files to <code>assets/theme3/</code></li>
+            <li>Run <code>node build.js</code></li>
+            <li>Open <code>index.html</code> in your browser</li>
+            <li>See your new theme section with full functionality!</li>
+        </ol>
+    </div>
+</body>
+</html> 

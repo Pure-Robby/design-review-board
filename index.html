@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Design Review Board</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-api.js"></script>
+  </head>
+  <body>
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container">
+      <!-- Auth UI will be populated by JavaScript -->
+    </div>
+    <h1>Hoodie<br/>Designs</h1>
+    <div class="theme">
+      <div class="theme-details">
+        <h2>Theme 1</h2>
+        <div class="stats">
+          <small><span class="design-count">5</span> designs </small>
+           | <small>Most liked: <span class="design-most-liked">-</span></small> | <small>Most disliked: <span class="design-least-liked">-</span></small>
+        </div>
+      </div>
+
+      <div class="design-wrapper">
+        <div class="theme-description">
+          <h3>Asked Chat GPT to look at our Pure Solutions website and suggest a design</h3>
+          <div class="tags">
+            <span>Tags:</span>
+            <div class="tag">AI Generated</div>
+            <div class="tag">Website Inspired</div>
+            <div class="tag">Pure Solutions</div>
+          </div>
+        </div>
+        <div class="design-grid">
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme1/Design 1.png"
+              alt="Design 1.png"
+              class="thumbnail"
+              data-design="theme1/Design 1.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme1/Design 1.png"></i>
+                <span class="badge" id="like-theme1/Design 1.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme1/Design 1.png"></i>
+                <span class="badge" id="dislike-theme1/Design 1.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme1/Design 1.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme1/Design 1.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme1/Design 2.png"
+              alt="Design 2.png"
+              class="thumbnail"
+              data-design="theme1/Design 2.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme1/Design 2.png"></i>
+                <span class="badge" id="like-theme1/Design 2.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme1/Design 2.png"></i>
+                <span class="badge" id="dislike-theme1/Design 2.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme1/Design 2.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme1/Design 2.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme1/Design 3.png"
+              alt="Design 3.png"
+              class="thumbnail"
+              data-design="theme1/Design 3.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme1/Design 3.png"></i>
+                <span class="badge" id="like-theme1/Design 3.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme1/Design 3.png"></i>
+                <span class="badge" id="dislike-theme1/Design 3.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme1/Design 3.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme1/Design 3.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme1/Design 4.png"
+              alt="Design 4.png"
+              class="thumbnail"
+              data-design="theme1/Design 4.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme1/Design 4.png"></i>
+                <span class="badge" id="like-theme1/Design 4.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme1/Design 4.png"></i>
+                <span class="badge" id="dislike-theme1/Design 4.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme1/Design 4.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme1/Design 4.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme1/Design 5.png"
+              alt="Design 5.png"
+              class="thumbnail"
+              data-design="theme1/Design 5.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme1/Design 5.png"></i>
+                <span class="badge" id="like-theme1/Design 5.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme1/Design 5.png"></i>
+                <span class="badge" id="dislike-theme1/Design 5.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme1/Design 5.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme1/Design 5.png">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme">
+      <div class="theme-details">
+        <h2>Theme 2</h2>
+        <div class="stats">
+          <small><span class="design-count">2</span> designs </small>
+           | <small>Most liked: <span class="design-most-liked">-</span></small> | <small>Most disliked: <span class="design-least-liked">-</span></small>
+        </div>
+      </div>
+
+      <div class="design-wrapper">
+        <div class="theme-description">
+          <h3>Bold colours with shapes and design-tool based design. "Build the Future" tagline carried over from previous design</h3>
+          <div class="tags">
+            <span>Tags:</span>
+            <div class="tag">Bold Colors</div>
+            <div class="tag">Geometric Shapes</div>
+            <div class="tag">Build the Future</div>
+          </div>
+        </div>
+        <div class="design-grid">
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme2/design-1.png"
+              alt="design-1.png"
+              class="thumbnail"
+              data-design="theme2/design-1.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme2/design-1.png"></i>
+                <span class="badge" id="like-theme2/design-1.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme2/design-1.png"></i>
+                <span class="badge" id="dislike-theme2/design-1.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme2/design-1.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme2/design-1.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme2/design-2.png"
+              alt="design-2.png"
+              class="thumbnail"
+              data-design="theme2/design-2.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme2/design-2.png"></i>
+                <span class="badge" id="like-theme2/design-2.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme2/design-2.png"></i>
+                <span class="badge" id="dislike-theme2/design-2.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme2/design-2.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme2/design-2.png">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme">
+      <div class="theme-details">
+        <h2>Theme 3</h2>
+        <div class="stats">
+          <small><span class="design-count">5</span> designs </small>
+           | <small>Most liked: <span class="design-most-liked">-</span></small> | <small>Most disliked: <span class="design-least-liked">-</span></small>
+        </div>
+      </div>
+
+      <div class="design-wrapper">
+        <div class="theme-description">
+          <h3>Expanded on the pixel art generated from the first attempt and asked it to take Muizenberg beach scene.</h3>
+          <div class="tags">
+            <span>Tags:</span>
+            <div class="tag">Code Meets Coast</div>
+            <div class="tag">Pixel Art</div>
+            <div class="tag">Muizenberg Beach</div>
+          </div>
+        </div>
+        <div class="design-grid">
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme3/Design 1.png"
+              alt="Design 1.png"
+              class="thumbnail"
+              data-design="theme3/Design 1.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme3/Design 1.png"></i>
+                <span class="badge" id="like-theme3/Design 1.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme3/Design 1.png"></i>
+                <span class="badge" id="dislike-theme3/Design 1.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme3/Design 1.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme3/Design 1.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme3/Design 2.png"
+              alt="Design 2.png"
+              class="thumbnail"
+              data-design="theme3/Design 2.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme3/Design 2.png"></i>
+                <span class="badge" id="like-theme3/Design 2.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme3/Design 2.png"></i>
+                <span class="badge" id="dislike-theme3/Design 2.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme3/Design 2.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme3/Design 2.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme3/Design 3.png"
+              alt="Design 3.png"
+              class="thumbnail"
+              data-design="theme3/Design 3.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme3/Design 3.png"></i>
+                <span class="badge" id="like-theme3/Design 3.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme3/Design 3.png"></i>
+                <span class="badge" id="dislike-theme3/Design 3.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme3/Design 3.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme3/Design 3.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme3/Design 4.png"
+              alt="Design 4.png"
+              class="thumbnail"
+              data-design="theme3/Design 4.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme3/Design 4.png"></i>
+                <span class="badge" id="like-theme3/Design 4.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme3/Design 4.png"></i>
+                <span class="badge" id="dislike-theme3/Design 4.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme3/Design 4.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme3/Design 4.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme3/Design 5.png"
+              alt="Design 5.png"
+              class="thumbnail"
+              data-design="theme3/Design 5.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme3/Design 5.png"></i>
+                <span class="badge" id="like-theme3/Design 5.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme3/Design 5.png"></i>
+                <span class="badge" id="dislike-theme3/Design 5.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme3/Design 5.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme3/Design 5.png">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme">
+      <div class="theme-details">
+        <h2>Theme 4</h2>
+        <div class="stats">
+          <small><span class="design-count">3</span> designs </small>
+           | <small>Most liked: <span class="design-most-liked">-</span></small> | <small>Most disliked: <span class="design-least-liked">-</span></small>
+        </div>
+      </div>
+
+      <div class="design-wrapper">
+        <div class="theme-description">
+          <h3>Vibrant colors and geometric patterns for modern appeal</h3>
+          <div class="tags">
+            <span>Tags:</span>
+            <div class="tag">Vibrant Colors</div>
+            <div class="tag">Geometric Patterns</div>
+            <div class="tag">Modern Appeal</div>
+          </div>
+        </div>
+        <div class="design-grid">
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme4/Design 1.png"
+              alt="Design 1.png"
+              class="thumbnail"
+              data-design="theme4/Design 1.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme4/Design 1.png"></i>
+                <span class="badge" id="like-theme4/Design 1.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme4/Design 1.png"></i>
+                <span class="badge" id="dislike-theme4/Design 1.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme4/Design 1.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme4/Design 1.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme4/Design 2.png"
+              alt="Design 2.png"
+              class="thumbnail"
+              data-design="theme4/Design 2.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme4/Design 2.png"></i>
+                <span class="badge" id="like-theme4/Design 2.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme4/Design 2.png"></i>
+                <span class="badge" id="dislike-theme4/Design 2.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme4/Design 2.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme4/Design 2.png">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme4/Design 3.png"
+              alt="Design 3.png"
+              class="thumbnail"
+              data-design="theme4/Design 3.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme4/Design 3.png"></i>
+                <span class="badge" id="like-theme4/Design 3.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme4/Design 3.png"></i>
+                <span class="badge" id="dislike-theme4/Design 3.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme4/Design 3.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme4/Design 3.png">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme">
+      <div class="theme-details">
+        <h2>Theme 5</h2>
+        <div class="stats">
+          <small><span class="design-count">1</span> design </small>
+          
+        </div>
+      </div>
+
+      <div class="design-wrapper">
+        <div class="theme-description">
+          <h3>Elegant designs with sophisticated color palettes</h3>
+          <div class="tags">
+            <span>Tags:</span>
+            <div class="tag">Elegant</div>
+            <div class="tag">Sophisticated</div>
+            <div class="tag">Color Palette</div>
+          </div>
+        </div>
+        <div class="design-grid">
+
+          <div class="design-item">
+            <p class="design-name"></p>
+            <img
+              src="assets/theme5/Design 1.png"
+              alt="Design 1.png"
+              class="thumbnail"
+              data-design="theme5/Design 1.png" />
+
+            <div class="feedback-icons">
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-up"
+                  data-type="like"
+                  data-design="theme5/Design 1.png"></i>
+                <span class="badge" id="like-theme5/Design 1.png">0</span>
+              </div>
+
+              <div class="icon-wrapper">
+                <i
+                  class="fa-regular fa-thumbs-down"
+                  data-type="dislike"
+                  data-design="theme5/Design 1.png"></i>
+                <span class="badge" id="dislike-theme5/Design 1.png">0</span>
+              </div>
+
+              <div
+                class="icon-wrapper comment-trigger"
+                data-design="theme5/Design 1.png">
+                <i class="fa-regular fa-pen-to-square"></i>
+                <span class="badge" id="comments-theme5/Design 1.png">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox">
+      <div class="lightbox-content">
+        <div class="image-wrapper">
+          <div class="lightbox-header">
+            <button id="lightboxClose" title="Close">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <button id="prevButton" class="nav-button prev-button" title="Previous">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <img id="fullImage" src="" alt="Full View" />
+          <button id="nextButton" class="nav-button next-button" title="Next">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+          
+          <!-- Lightbox feedback buttons -->
+          <div class="lightbox-feedback">
+            <button id="lightboxLike" class="feedback-btn like-btn" title="Like">
+              <i class="fa-regular fa-thumbs-up"></i>
+            </button>
+            <button id="lightboxDislike" class="feedback-btn dislike-btn" title="Dislike">
+              <i class="fa-regular fa-thumbs-down"></i>
+            </button>
+          </div>
+        </div>
+        <div id="commentSidebar">
+          <div class="sidebar-header">
+            <h4 id="designTitle">Comments</h4>
+            <button id="changeUsername" class="username-button" title="Change username">
+              <i class="fa-solid fa-user-edit"></i>
+            </button>
+          </div>
+          <div id="commentList"></div>
+          <div class="sidebar-footer">
+            <textarea
+              id="commentInputSidebar"
+              placeholder="Add a comment..."></textarea>
+            <button id="submitCommentSidebar">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

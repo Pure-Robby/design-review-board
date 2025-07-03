@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testConnection() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing connection...</p>';
+
+            try {
+                // Test 1: Basic connection
+                console.log('Testing basic connection...');
+                const { data, error } = await supabase
+                    .from('feedback')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    throw error;
+                }
+
+                results.innerHTML += '<p style="color: green;">✓ Basic connection successful</p>';
+
+                // Test 2: Check table structure
+                console.log('Checking table structure...');
+                const { data: structure, error: structureError } = await supabase
+                    .from('feedback')
+                    .select('*')
+                    .limit(1);
+
+                if (structureError) {
+                    throw structureError;
+                }
+
+                results.innerHTML += '<p style="color: green;">✓ Table structure check successful</p>';
+                
+                // Show available columns
+                if (structure && structure.length > 0) {
+                    const columns = Object.keys(structure[0]);
+                    results.innerHTML += `<p>Available columns: ${columns.join(', ')}</p>`;
+                }
+
+                // Test 3: Test with user_id column
+                console.log('Testing with user_id column...');
+                const { data: userTest, error: userError } = await supabase
+                    .from('feedback')
+                    .select('design_id, user_id, vote_type')
+                    .limit(1);
+
+                if (userError) {
+                    results.innerHTML += `<p style="color: orange;">⚠ user_id column issue: ${userError.message}</p>`;
+                } else {
+                    results.innerHTML += '<p style="color: green;">✓ user_id column accessible</p>';
+                }
+
+                // Test 4: Test vote submission
+                console.log('Testing vote submission...');
+                const testUserId = 'test_user_' + Date.now();
+                const { error: voteError } = await supabase
+                    .from('feedback')
+                    .insert({
+                        design_id: 'test-design',
+                        vote_type: 'like',
+                        user_id: testUserId
+                    });
+
+                if (voteError) {
+                    results.innerHTML += `<p style="color: orange;">⚠ Vote submission issue: ${voteError.message}</p>`;
+                } else {
+                    results.innerHTML += '<p style="color: green;">✓ Vote submission successful</p>';
+                    
+                    // Clean up test data
+                    await supabase
+                        .from('feedback')
+                        .delete()
+                        .eq('design_id', 'test-design')
+                        .eq('user_id', testUserId);
+                }
+
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                results.innerHTML += `<p style="color: red;">✗ Error: ${error.message}</p>`;
+                results.innerHTML += `<p>Code: ${error.code || 'N/A'}</p>`;
+                results.innerHTML += `<p>Details: ${error.details || 'N/A'}</p>`;
+            }
+        }
+
+        // Run test when page loads
+        window.addEventListener('DOMContentLoaded', testConnection);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,19 @@
+{
+  "name": "design-review-board",
+  "version": "1.0.0",
+  "description": "Automated design review board that dynamically generates sections for theme folders",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js && echo 'Build complete! Open index.html in your browser to view the site.'"
+  },
+  "keywords": [
+    "design",
+    "review",
+    "feedback",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+} 
