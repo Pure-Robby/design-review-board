@@ -983,6 +983,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Ensure voted state is updated after userVoteCache is set
   updateVotedState();
   await updateThemeStats();
 });
