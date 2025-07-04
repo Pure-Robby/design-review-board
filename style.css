@@ -132,10 +132,28 @@ h1 {
 .icon-wrapper i {
   cursor: pointer;
   transition: color 0.2s ease;
+  color: #ccc; /* Default icon color */
 }
 
 .icon-wrapper i:hover {
   color: #fff;
+}
+
+/* More specific voted styles to override hover */
+.icon-wrapper i.fa-thumbs-up.voted {
+  color: #4caf50 !important;
+}
+
+.icon-wrapper i.fa-thumbs-down.voted {
+  color: #f44336 !important;
+}
+
+.icon-wrapper i.fa-thumbs-up.voted:hover {
+  color: #4caf50 !important;
+}
+
+.icon-wrapper i.fa-thumbs-down.voted:hover {
+  color: #f44336 !important;
 }
 
 .icon-wrapper i.processing {

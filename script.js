@@ -695,6 +695,14 @@ function initializeEventListeners() {
         }
       });
 
+      // Check if user is authenticated FIRST before any UI updates
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Show user-friendly message without changing anything
+        alert('Please sign in with Google to vote on designs. Look for the "Sign in with Google" button in the top-right corner.');
+        return;
+      }
+
       // Get current vote state
       const currentVote = userVoteCache.get(design) || null;
       
@@ -752,7 +760,10 @@ function initializeEventListeners() {
           updateBadgeCache(design, cachedBadges.likes, cachedBadges.dislikes, cachedBadges.comments);
           if (likeBadge) likeBadge.textContent = cachedBadges.likes;
           if (dislikeBadge) dislikeBadge.textContent = cachedBadges.dislikes;
-          console.error('Vote submission failed, reverted changes');
+          alert('Failed to submit vote. Please try again.');
+        } else {
+          // Vote was successful - ensure visual state is correct
+          updateVotedStateForDesign(design);
         }
       } catch (error) {
         console.error('Error submitting vote:', error);
@@ -763,6 +774,7 @@ function initializeEventListeners() {
         updateBadgeCache(design, cachedBadges.likes, cachedBadges.dislikes, cachedBadges.comments);
         if (likeBadge) likeBadge.textContent = cachedBadges.likes;
         if (dislikeBadge) dislikeBadge.textContent = cachedBadges.dislikes;
+        alert('Error submitting vote. Please check your connection and try again.');
       } finally {
         // Remove processing state from ALL voting elements for this design
         document.querySelectorAll(`[data-design="${design}"]`).forEach(el => {
