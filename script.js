@@ -10,7 +10,31 @@ let currentDesign = null;
 let currentThemeDesigns = []; // Array to store designs for current theme slideshow
 let currentDesignIndex = 0; // Current position in slideshow
 let currentTheme = null; // Current theme folder
-let currentUsername = localStorage.getItem('username') || null; // Get stored username
+
+// Cache for all feedback data to eliminate database calls during navigation
+let allFeedbackCache = null;
+
+// Get feedback data from cache or fallback to API
+async function getFeedbackDataFromCache(design) {
+  // If we have cached data, use it
+  if (allFeedbackCache && allFeedbackCache[design]) {
+    return allFeedbackCache[design];
+  }
+  
+  // Fallback to API call if cache is not available
+  return await getFeedbackData(design);
+}
+
+// Get feedback data from cache synchronously (for immediate UI updates)
+function getFeedbackDataFromCacheSync(design) {
+  // If we have cached data, use it
+  if (allFeedbackCache && allFeedbackCache[design]) {
+    return allFeedbackCache[design];
+  }
+  
+  // Return default data if not in cache
+  return { likes: 0, dislikes: 0, comments: [], userVote: null };
+}
 
 // Format file name: my-design_v2.png → My Design V2
 function formatDesignName(filename) {
@@ -64,6 +88,15 @@ async function updateBadges(design) {
   if (likeBadge) likeBadge.textContent = feedback.likes;
   if (dislikeBadge) dislikeBadge.textContent = feedback.dislikes;
   if (commentBadge) commentBadge.textContent = feedback.comments.length;
+  
+  // Update sidebar vote counts if this is the current design
+  if (currentDesign === design) {
+    const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+    const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+    
+    if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
+    if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
+  }
 
   // Cache the badge data
   badgeCache.set(design, {
@@ -76,6 +109,26 @@ async function updateBadges(design) {
 // Update badge cache for a specific design
 function updateBadgeCache(design, likes, dislikes, comments) {
   badgeCache.set(design, { likes, dislikes, comments });
+  
+  // Update sidebar vote counts if this is the current design
+  if (currentDesign === design) {
+    const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+    const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+    
+    if (sidebarLikeCount) {
+      sidebarLikeCount.textContent = likes;
+    }
+    if (sidebarDislikeCount) {
+      sidebarDislikeCount.textContent = dislikes;
+    }
+  }
+  
+  // Update the global feedback cache as well
+  if (allFeedbackCache && allFeedbackCache[design]) {
+    allFeedbackCache[design].likes = likes;
+    allFeedbackCache[design].dislikes = dislikes;
+    allFeedbackCache[design].comments = allFeedbackCache[design].comments || [];
+  }
 }
 
 // Update theme statistics (most liked and most disliked - mutually exclusive)
@@ -193,6 +246,24 @@ function updateVotedState() {
         dislikeBtn.classList.add('voted');
       }
     }
+    
+    // Update sidebar voting icons
+    const sidebarLike = document.getElementById('sidebarLike');
+    const sidebarDislike = document.getElementById('sidebarDislike');
+    
+    if (sidebarLike) {
+      sidebarLike.classList.remove('voted');
+      if (userVote === 'like') {
+        sidebarLike.classList.add('voted');
+      }
+    }
+    
+    if (sidebarDislike) {
+      sidebarDislike.classList.remove('voted');
+      if (userVote === 'dislike') {
+        sidebarDislike.classList.add('voted');
+      }
+    }
   }
 }
 
@@ -227,13 +298,31 @@ function updateVotedStateForDesign(design) {
         dislikeBtn.classList.add('voted');
       }
     }
+    
+    // Update sidebar voting icons
+    const sidebarLike = document.getElementById('sidebarLike');
+    const sidebarDislike = document.getElementById('sidebarDislike');
+    
+    if (sidebarLike) {
+      sidebarLike.classList.remove('voted');
+      if (userVote === 'like') {
+        sidebarLike.classList.add('voted');
+      }
+    }
+    
+    if (sidebarDislike) {
+      sidebarDislike.classList.remove('voted');
+      if (userVote === 'dislike') {
+        sidebarDislike.classList.add('voted');
+      }
+    }
   }
 }
 
 // Delete a comment
 async function deleteComment(design, commentIndex) {
   if (confirm('Are you sure you want to delete this comment?')) {
-    const feedback = await getFeedbackData(design);
+    const feedback = await getFeedbackDataFromCache(design);
     if (feedback.comments && feedback.comments[commentIndex]) {
       const comment = feedback.comments[commentIndex];
       
@@ -241,26 +330,47 @@ async function deleteComment(design, commentIndex) {
       const success = await deleteCommentFromSupabase(design, comment.text, comment.username);
       
       if (success) {
-        // Re-render comments and update badges
+        // Update global cache by removing the comment
+        if (allFeedbackCache && allFeedbackCache[design]) {
+          // Remove comment from cache (comments are stored in reverse order in cache)
+          const reversedIndex = feedback.comments.length - 1 - commentIndex;
+          allFeedbackCache[design].comments.splice(reversedIndex, 1);
+        }
+        
+        // Re-render comments
         renderComments(design);
-        updateBadges(design);
+        
+        // Update badge cache immediately with new comment count
+        const currentCache = badgeCache.get(design) || { likes: 0, dislikes: 0, comments: 0 };
+        const newCommentCount = Math.max(0, currentCache.comments - 1);
+        updateBadgeCache(design, currentCache.likes, currentCache.dislikes, newCommentCount);
+        
+        // Update the badge display
+        const commentBadge = document.getElementById(`comments-${design}`);
+        if (commentBadge) {
+          commentBadge.textContent = newCommentCount;
+        }
       }
     }
   }
 }
 
-// Render all comments for the current design
+// Render comments using cached data
 async function renderComments(design) {
-  const feedback = await getFeedbackData(design);
+  const feedback = await getFeedbackDataFromCache(design);
   const comments = (feedback.comments || []).slice().reverse();
 
-  designTitle.textContent = `Comments - ${formatDesignName(design)}`;
-  commentList.innerHTML = '';
+  designTitle.innerHTML = `${formatDesignName(design)}`;
+  commentList.innerHTML = '<small>Comments</small>';
 
   if (comments.length === 0) {
     commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
     return;
   }
+
+  // Get current user to check if they can delete comments
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id;
 
   comments.forEach((comment, index) => {
     const div = document.createElement('div');
@@ -276,19 +386,23 @@ async function renderComments(design) {
     textSpan.className = 'comment-text';
     textSpan.textContent = comment.text;
     
-    // Create comment delete element
-    const deleteSpan = document.createElement('span');
-    deleteSpan.className = 'delete-comment';
-    deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
-    
-    // Add click event to delete comment
-    deleteSpan.addEventListener('click', () => {
-      deleteComment(design, index);
-    });
-    
-    div.appendChild(deleteSpan);
     div.appendChild(usernameSpan);
     div.appendChild(textSpan);
+    
+    // Only show delete button if user is authenticated and this is their comment
+    if (currentUserId && comment.user_id === currentUserId) {
+      const deleteSpan = document.createElement('span');
+      deleteSpan.className = 'delete-comment';
+      deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+      
+      // Add click event to delete comment
+      deleteSpan.addEventListener('click', () => {
+        deleteComment(design, index);
+      });
+      
+      div.appendChild(deleteSpan);
+    }
+    
     commentList.appendChild(div);
   });
 }
@@ -306,7 +420,7 @@ function getThemeDesigns(themeElement) {
   return designs;
 }
 
-// Navigate to next design in slideshow
+// Navigate to next design in slideshow (optimized with cached data)
 async function nextDesign() {
   currentDesignIndex = (currentDesignIndex + 1) % currentThemeDesigns.length;
   const design = currentThemeDesigns[currentDesignIndex];
@@ -316,11 +430,71 @@ async function nextDesign() {
   updateVotedState();
   
   fullImage.src = design.src;
-  await renderComments(currentDesign);
-  await updateBadges(currentDesign);
+  
+  // Use cached data for immediate response (synchronous)
+  const feedback = getFeedbackDataFromCacheSync(currentDesign);
+  
+  // Update UI immediately with cached data
+  designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
+  
+  // Update comments immediately with cached data
+  const comments = (feedback.comments || []).slice().reverse();
+  commentList.innerHTML = '<small>Comments</small>';
+
+  if (comments.length === 0) {
+    commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
+  } else {
+    // For designs with comments, we need to get user info for delete buttons
+    // This is the only async operation needed
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+
+    comments.forEach((comment, index) => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      
+      const usernameSpan = document.createElement('span');
+      usernameSpan.className = 'comment-username';
+      usernameSpan.textContent = comment.username || 'Anonymous';
+      
+      const textSpan = document.createElement('span');
+      textSpan.className = 'comment-text';
+      textSpan.textContent = comment.text;
+      
+      div.appendChild(usernameSpan);
+      div.appendChild(textSpan);
+      
+      if (currentUserId && comment.user_id === currentUserId) {
+        const deleteSpan = document.createElement('span');
+        deleteSpan.className = 'delete-comment';
+        deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+        
+        deleteSpan.addEventListener('click', () => {
+          deleteComment(currentDesign, index);
+        });
+        
+        div.appendChild(deleteSpan);
+      }
+      
+      commentList.appendChild(div);
+    });
+  }
+  
+  // Update badges and sidebar counts with cached data
+  const likeBadge = document.getElementById(`like-${currentDesign}`);
+  const dislikeBadge = document.getElementById(`dislike-${currentDesign}`);
+  const commentBadge = document.getElementById(`comments-${currentDesign}`);
+  const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+  const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+  
+  if (likeBadge) likeBadge.textContent = feedback.likes;
+  if (dislikeBadge) dislikeBadge.textContent = feedback.dislikes;
+  if (commentBadge) commentBadge.textContent = feedback.comments.length;
+  if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
+  if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
 }
 
-// Navigate to previous design in slideshow
+// Navigate to previous design in slideshow (optimized with cached data)
 async function previousDesign() {
   currentDesignIndex = (currentDesignIndex - 1 + currentThemeDesigns.length) % currentThemeDesigns.length;
   const design = currentThemeDesigns[currentDesignIndex];
@@ -330,8 +504,68 @@ async function previousDesign() {
   updateVotedState();
   
   fullImage.src = design.src;
-  await renderComments(currentDesign);
-  await updateBadges(currentDesign);
+  
+  // Use cached data for immediate response (synchronous)
+  const feedback = getFeedbackDataFromCacheSync(currentDesign);
+  
+  // Update UI immediately with cached data
+  designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
+  
+  // Update comments immediately with cached data
+  const comments = (feedback.comments || []).slice().reverse();
+  commentList.innerHTML = '<small>Comments</small>';
+
+  if (comments.length === 0) {
+    commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
+  } else {
+    // For designs with comments, we need to get user info for delete buttons
+    // This is the only async operation needed
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+
+    comments.forEach((comment, index) => {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      
+      const usernameSpan = document.createElement('span');
+      usernameSpan.className = 'comment-username';
+      usernameSpan.textContent = comment.username || 'Anonymous';
+      
+      const textSpan = document.createElement('span');
+      textSpan.className = 'comment-text';
+      textSpan.textContent = comment.text;
+      
+      div.appendChild(usernameSpan);
+      div.appendChild(textSpan);
+      
+      if (currentUserId && comment.user_id === currentUserId) {
+        const deleteSpan = document.createElement('span');
+        deleteSpan.className = 'delete-comment';
+        deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+        
+        deleteSpan.addEventListener('click', () => {
+          deleteComment(currentDesign, index);
+        });
+        
+        div.appendChild(deleteSpan);
+      }
+      
+      commentList.appendChild(div);
+    });
+  }
+  
+  // Update badges and sidebar counts with cached data
+  const likeBadge = document.getElementById(`like-${currentDesign}`);
+  const dislikeBadge = document.getElementById(`dislike-${currentDesign}`);
+  const commentBadge = document.getElementById(`comments-${currentDesign}`);
+  const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+  const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+  
+  if (likeBadge) likeBadge.textContent = feedback.likes;
+  if (dislikeBadge) dislikeBadge.textContent = feedback.dislikes;
+  if (commentBadge) commentBadge.textContent = feedback.comments.length;
+  if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
+  if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
 }
 
 // Initialize event listeners for dynamically generated content
@@ -356,8 +590,68 @@ function initializeEventListeners() {
       
       fullImage.src = thumb.src;
       lightbox.style.display = 'flex';
-      await renderComments(currentDesign);
-      await updateBadges(currentDesign);
+      
+      // Use cached data for immediate response (synchronous)
+      const feedback = getFeedbackDataFromCacheSync(currentDesign);
+      
+      // Update UI immediately with cached data
+      designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
+      
+      // Update comments immediately with cached data
+      const comments = (feedback.comments || []).slice().reverse();
+      commentList.innerHTML = '<small>Comments</small>';
+
+      if (comments.length === 0) {
+        commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
+      } else {
+        // For designs with comments, we need to get user info for delete buttons
+        // This is the only async operation needed
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        comments.forEach((comment, index) => {
+          const div = document.createElement('div');
+          div.className = 'comment';
+          
+          const usernameSpan = document.createElement('span');
+          usernameSpan.className = 'comment-username';
+          usernameSpan.textContent = comment.username || 'Anonymous';
+          
+          const textSpan = document.createElement('span');
+          textSpan.className = 'comment-text';
+          textSpan.textContent = comment.text;
+          
+          div.appendChild(usernameSpan);
+          div.appendChild(textSpan);
+          
+          if (currentUserId && comment.user_id === currentUserId) {
+            const deleteSpan = document.createElement('span');
+            deleteSpan.className = 'delete-comment';
+            deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+            
+            deleteSpan.addEventListener('click', () => {
+              deleteComment(currentDesign, index);
+            });
+            
+            div.appendChild(deleteSpan);
+          }
+          
+          commentList.appendChild(div);
+        });
+      }
+      
+      // Update badges and sidebar counts with cached data
+      const likeBadge = document.getElementById(`like-${currentDesign}`);
+      const dislikeBadge = document.getElementById(`dislike-${currentDesign}`);
+      const commentBadge = document.getElementById(`comments-${currentDesign}`);
+      const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+      const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+      
+      if (likeBadge) likeBadge.textContent = feedback.likes;
+      if (dislikeBadge) dislikeBadge.textContent = feedback.dislikes;
+      if (commentBadge) commentBadge.textContent = feedback.comments.length;
+      if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
+      if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
     });
   });
 
@@ -466,17 +760,6 @@ function initializeEventListeners() {
   });
 }
 
-// Show username input if not set
-function showUsernameInput() {
-  const username = prompt('Please enter your username (this will be saved for future comments):', currentUsername || '');
-  if (username && username.trim()) {
-    currentUsername = username.trim();
-    localStorage.setItem('username', currentUsername);
-    return true;
-  }
-  return false;
-}
-
 // Submit new comment
 submitCommentSidebar.addEventListener('click', async () => {
   const commentText = commentInputSidebar.value.trim();
@@ -489,13 +772,35 @@ submitCommentSidebar.addEventListener('click', async () => {
     return;
   }
 
-  // Submit comment to Supabase using authenticated user
+  // Submit comment to Supabase using authenticated user's name
   const success = await submitComment(currentDesign, commentText, user.user_metadata?.full_name || user.email);
   
   if (success) {
     commentInputSidebar.value = '';
+    
+    // Update global cache with new comment
+    if (allFeedbackCache && allFeedbackCache[currentDesign]) {
+      const newComment = {
+        text: commentText,
+        username: user.user_metadata?.full_name || user.email,
+        timestamp: new Date().toISOString(),
+        user_id: user.id
+      };
+      allFeedbackCache[currentDesign].comments.push(newComment);
+    }
+    
     renderComments(currentDesign);
-    updateBadges(currentDesign);
+    
+    // Update badge cache immediately with new comment count
+    const currentCache = badgeCache.get(currentDesign) || { likes: 0, dislikes: 0, comments: 0 };
+    const newCommentCount = currentCache.comments + 1;
+    updateBadgeCache(currentDesign, currentCache.likes, currentCache.dislikes, newCommentCount);
+    
+    // Update the badge display
+    const commentBadge = document.getElementById(`comments-${currentDesign}`);
+    if (commentBadge) {
+      commentBadge.textContent = newCommentCount;
+    }
   }
 });
 
@@ -514,11 +819,6 @@ document.getElementById('nextButton').addEventListener('click', () => {
   nextDesign();
 });
 
-// Change username button
-document.getElementById('changeUsername').addEventListener('click', () => {
-  showUsernameInput();
-});
-
 // Lightbox feedback buttons
 document.getElementById('lightboxLike').addEventListener('click', () => {
   if (currentDesign) {
@@ -530,6 +830,25 @@ document.getElementById('lightboxLike').addEventListener('click', () => {
 });
 
 document.getElementById('lightboxDislike').addEventListener('click', () => {
+  if (currentDesign) {
+    const icon = document.querySelector('.feedback-icons i[data-type="dislike"][data-design="' + currentDesign + '"]');
+    if (icon) {
+      icon.click(); // Trigger the existing dislike functionality
+    }
+  }
+});
+
+// Sidebar voting buttons
+document.getElementById('sidebarLike').addEventListener('click', () => {
+  if (currentDesign) {
+    const icon = document.querySelector('.feedback-icons i[data-type="like"][data-design="' + currentDesign + '"]');
+    if (icon) {
+      icon.click(); // Trigger the existing like functionality
+    }
+  }
+});
+
+document.getElementById('sidebarDislike').addEventListener('click', () => {
   if (currentDesign) {
     const icon = document.querySelector('.feedback-icons i[data-type="dislike"][data-design="' + currentDesign + '"]');
     if (icon) {
@@ -583,32 +902,34 @@ function clearUserVoteCache() {
 async function refreshUserVoteCache() {
   userVoteCache.clear();
   
-  // Reload all user votes for the new user
-  const designs = new Set();
+  // Load all feedback data in one batch call
+  const allFeedback = await getAllFeedback();
+  
+  // Update global cache
+  allFeedbackCache = allFeedback;
+  
+  // Update user vote cache for all designs
   document.querySelectorAll('.feedback-icons i').forEach(icon => {
     const design = icon.dataset.design;
-    if (design) designs.add(design);
+    if (design && allFeedback[design]) {
+      userVoteCache.set(design, allFeedback[design].userVote);
+    }
   });
-  
-  for (const design of designs) {
-    const feedback = await getFeedbackData(design);
-    userVoteCache.set(design, feedback.userVote);
-  }
   
   updateVotedState();
 }
 
+// Make functions globally available for supabase-config.js
+window.refreshUserVoteCache = refreshUserVoteCache;
+window.clearUserVoteCache = clearUserVoteCache;
+
 // Initialize on load: badges, voted states, and design labels
 window.addEventListener('DOMContentLoaded', async () => {
-  console.log('DOM Content Loaded - Initializing app...');
-  
   // Check if Supabase is available
   if (typeof supabase === 'undefined') {
     console.error('Supabase is not loaded. Please check your internet connection and refresh the page.');
     return;
   }
-  
-  console.log('Supabase is available, proceeding with initialization...');
   
   // Initialize auth state
   await checkAuthState();
@@ -626,25 +947,42 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize event listeners
   initializeEventListeners();
 
-  // Set initial badges and vote states
-  console.log('Loading initial data...');
+  // Load all feedback data in one batch call
+  const allFeedback = await getAllFeedback();
   
-  // Load all designs into cache first
-  const designs = new Set();
+  // Store in global cache for navigation
+  allFeedbackCache = allFeedback;
+  
+  // Update badges and cache for all designs
   document.querySelectorAll('.feedback-icons i').forEach(icon => {
     const design = icon.dataset.design;
-    if (design) designs.add(design);
+    if (design && allFeedback[design]) {
+      const feedback = allFeedback[design];
+      userVoteCache.set(design, feedback.userVote);
+      
+      // Update badge cache
+      updateBadgeCache(design, feedback.likes, feedback.dislikes, feedback.comments.length);
+      
+      // Update badge display
+      const likeBadge = document.getElementById(`like-${design}`);
+      const dislikeBadge = document.getElementById(`dislike-${design}`);
+      const commentBadge = document.getElementById(`comments-${design}`);
+      
+      if (likeBadge) likeBadge.textContent = feedback.likes;
+      if (dislikeBadge) dislikeBadge.textContent = feedback.dislikes;
+      if (commentBadge) commentBadge.textContent = feedback.comments.length;
+      
+      // Update sidebar vote counts if this is the current design
+      if (currentDesign === design) {
+        const sidebarLikeCount = document.getElementById('sidebarLikeCount');
+        const sidebarDislikeCount = document.getElementById('sidebarDislikeCount');
+        
+        if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
+        if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
+      }
+    }
   });
-  
-  // Pre-load user votes for all designs
-  for (const design of designs) {
-    const feedback = await getFeedbackData(design);
-    userVoteCache.set(design, feedback.userVote);
-    await updateBadges(design);
-  }
 
   updateVotedState();
   await updateThemeStats();
-  
-  console.log('App initialization complete!');
 });

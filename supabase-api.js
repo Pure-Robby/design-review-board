@@ -8,8 +8,6 @@ function isSupabaseReady() {
 // Get all feedback data for a design
 async function getFeedbackData(designId) {
   try {
-    console.log('Fetching feedback for design:', designId);
-    
     // Check if Supabase is ready
     if (!isSupabaseReady()) {
       console.error('Supabase is not initialized');
@@ -26,8 +24,6 @@ async function getFeedbackData(designId) {
       console.error('Supabase query error:', error);
       throw error;
     }
-
-    console.log('Raw feedback data:', data);
 
     // Get current user's vote
     const { data: { user } } = await supabase.auth.getUser();
@@ -58,22 +54,16 @@ async function getFeedbackData(designId) {
           feedback.comments.push({
             text: item.comment_text,
             username: item.username || 'Anonymous',
-            timestamp: item.created_at
+            timestamp: item.created_at,
+            user_id: item.user_id
           });
         }
       });
     }
 
-    console.log('Processed feedback:', feedback);
     return feedback;
   } catch (error) {
     console.error('Error fetching feedback:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
-    });
     return { likes: 0, dislikes: 0, comments: [], userVote: null };
   }
 }
@@ -81,8 +71,6 @@ async function getFeedbackData(designId) {
 // Submit a vote (like or dislike) - handles vote changes and prevents duplicates
 async function submitVote(designId, voteType) {
   try {
-    console.log('Submitting vote:', { designId, voteType });
-    
     // Check if Supabase is ready
     if (!isSupabaseReady()) {
       console.error('Supabase is not initialized');
@@ -97,7 +85,6 @@ async function submitVote(designId, voteType) {
     }
     
     const userId = user.id;
-    console.log('Using authenticated userId:', userId);
     
     // First, check if user has already voted on this design
     const { data: existingVotes, error: fetchError } = await supabase
@@ -112,15 +99,12 @@ async function submitVote(designId, voteType) {
       throw fetchError;
     }
 
-    console.log('Existing votes found:', existingVotes);
-
     if (existingVotes && existingVotes.length > 0) {
       // User has already voted - update their vote
       const existingVote = existingVotes[0];
       
       if (existingVote.vote_type === voteType) {
         // User is clicking the same vote type - remove their vote
-        console.log('Removing existing vote');
         const { error: deleteError } = await supabase
           .from('feedback')
           .delete()
@@ -132,7 +116,6 @@ async function submitVote(designId, voteType) {
         }
       } else {
         // User is changing their vote - update it
-        console.log('Updating existing vote from', existingVote.vote_type, 'to', voteType);
         const { error: updateError } = await supabase
           .from('feedback')
           .update({ vote_type: voteType })
@@ -145,7 +128,6 @@ async function submitVote(designId, voteType) {
       }
     } else {
       // User hasn't voted yet - insert new vote
-      console.log('Inserting new vote');
       const { error: insertError } = await supabase
         .from('feedback')
         .insert({
@@ -160,34 +142,32 @@ async function submitVote(designId, voteType) {
       }
     }
 
-    console.log('Vote submitted successfully');
     return true;
   } catch (error) {
     console.error('Error submitting vote:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
-    });
     return false;
   }
 }
 
-// Generate a simple user ID for tracking votes
-function generateUserId() {
-  return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-}
+
 
 // Submit a comment
 async function submitComment(designId, commentText, username) {
   try {
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+
     const { error } = await supabase
       .from('feedback')
       .insert({
         design_id: designId,
         comment_text: commentText,
-        username: username || 'Anonymous'
+        username: username || 'Anonymous',
+        user_id: user.id
       });
 
     if (error) throw error;
@@ -198,15 +178,22 @@ async function submitComment(designId, commentText, username) {
   }
 }
 
-// Delete a comment (by timestamp and username for now)
+// Delete a comment (by user ID for security)
 async function deleteCommentFromSupabase(designId, commentText, username) {
   try {
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+
     const { error } = await supabase
       .from('feedback')
       .delete()
       .eq('design_id', designId)
       .eq('comment_text', commentText)
-      .eq('username', username);
+      .eq('user_id', user.id);
 
     if (error) throw error;
     return true;
@@ -226,6 +213,18 @@ async function getAllFeedback() {
 
     if (error) throw error;
 
+    // Get current user's vote for all designs
+    const { data: { user } } = await supabase.auth.getUser();
+    const userVotes = {};
+    
+    if (user && data) {
+      data.forEach(item => {
+        if ((item.vote_type === 'like' || item.vote_type === 'dislike') && item.user_id === user.id) {
+          userVotes[item.design_id] = item.vote_type;
+        }
+      });
+    }
+
     // Group by design_id
     const grouped = {};
     data.forEach(item => {
@@ -233,7 +232,8 @@ async function getAllFeedback() {
         grouped[item.design_id] = {
           likes: 0,
           dislikes: 0,
-          comments: []
+          comments: [],
+          userVote: userVotes[item.design_id] || null
         };
       }
       
@@ -243,7 +243,8 @@ async function getAllFeedback() {
         grouped[item.design_id].comments.push({
           text: item.comment_text,
           username: item.username || 'Anonymous',
-          timestamp: item.created_at
+          timestamp: item.created_at,
+          user_id: item.user_id
         });
       }
     });

@@ -354,24 +354,55 @@ h1 {
   align-items: center;
 }
 
+.sidebar-voting {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.vote-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.vote-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-vote-icon {
+  font-size: 1rem;
+  color: #888;
+  transition: color 0.2s ease;
+}
+
+.sidebar-vote-icon.voted {
+  color: #fff;
+}
+
+.sidebar-vote-icon.fa-thumbs-up.voted {
+  color: #4caf50;
+}
+
+.sidebar-vote-icon.fa-thumbs-down.voted {
+  color: #f44336;
+}
+
+.sidebar-vote-count {
+  font-size: 0.8rem;
+  color: #ccc;
+  font-weight: 600;
+}
+
 .sidebar-header h4 {
   margin: 0;
 }
 
-.username-button {
-  background: transparent;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: color 0.2s ease;
-}
 
-.username-button:hover {
-  color: #4caf50;
-}
 
 #commentList {
   flex: 1;

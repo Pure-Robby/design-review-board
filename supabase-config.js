@@ -24,7 +24,7 @@ async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin
+      redirectTo: window.location.href
     }
   });
   
@@ -79,12 +79,16 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN') {
     currentUser = session.user;
     updateAuthUI();
-    // Refresh user vote cache with new user
-    refreshUserVoteCache();
+    // Refresh user vote cache with new user (if function is available)
+    if (typeof window.refreshUserVoteCache === 'function') {
+      window.refreshUserVoteCache();
+    }
   } else if (event === 'SIGNED_OUT') {
     currentUser = null;
     updateAuthUI();
-    // Clear user vote cache
-    clearUserVoteCache();
+    // Clear user vote cache (if function is available)
+    if (typeof window.clearUserVoteCache === 'function') {
+      window.clearUserVoteCache();
+    }
   }
 }); 

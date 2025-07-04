@@ -34,7 +34,7 @@
 
 3. **Push to GitHub/GitLab/Bitbucket:**
    ```bash
-   git remote add origin https://github.com/yourusername/your-repo-name.git
+   git remote add origin https://github.com/Pure-Robby/Design-Review-Board.git
    git push -u origin main
    ```
 

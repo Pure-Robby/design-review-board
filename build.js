@@ -171,6 +171,10 @@ function generateHTML(themes) {
     <script src="supabase-api.js"></script>
   </head>
   <body>
+
+    <!-- Authentication Container -->
+    <div id="authContainer" class="auth-container"></div>
+
 ${themeSections}
 
     <!-- Lightbox -->
@@ -203,9 +207,16 @@ ${themeSections}
         <div id="commentSidebar">
           <div class="sidebar-header">
             <h4 id="designTitle">Comments</h4>
-            <button id="changeUsername" class="username-button" title="Change username">
-              <i class="fa-solid fa-user-edit"></i>
-            </button>
+            <div class="sidebar-voting">
+              <div class="vote-item">
+                <i class="fa-regular fa-thumbs-up sidebar-vote-icon" id="sidebarLike"></i>
+                <span class="sidebar-vote-count" id="sidebarLikeCount">0</span>
+              </div>
+              <div class="vote-item">
+                <i class="fa-regular fa-thumbs-down sidebar-vote-icon" id="sidebarDislike"></i>
+                <span class="sidebar-vote-count" id="sidebarDislikeCount">0</span>
+              </div>
+            </div>
           </div>
           <div id="commentList"></div>
           <div class="sidebar-footer">
