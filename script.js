@@ -127,7 +127,18 @@ function updateBadgeCache(design, likes, dislikes, comments) {
   if (allFeedbackCache && allFeedbackCache[design]) {
     allFeedbackCache[design].likes = likes;
     allFeedbackCache[design].dislikes = dislikes;
-    allFeedbackCache[design].comments = allFeedbackCache[design].comments || [];
+    // Preserve existing comments array structure
+    if (!allFeedbackCache[design].comments) {
+      allFeedbackCache[design].comments = [];
+    }
+  } else if (allFeedbackCache) {
+    // Create new entry if it doesn't exist
+    allFeedbackCache[design] = {
+      likes: likes,
+      dislikes: dislikes,
+      comments: [],
+      userVote: userVoteCache.get(design) || null
+    };
   }
 }
 
@@ -675,7 +686,14 @@ function initializeEventListeners() {
 
       // Prevent multiple clicks while processing
       if (icon.classList.contains('processing')) return;
-      icon.classList.add('processing');
+      
+      // Add processing state to ALL voting icons for this design to prevent race conditions
+      document.querySelectorAll(`[data-design="${design}"]`).forEach(el => {
+        if (el.matches('.feedback-icons i[data-type]') || 
+            el.matches('#lightboxLike, #lightboxDislike, #sidebarLike, #sidebarDislike')) {
+          el.classList.add('processing');
+        }
+      });
 
       // Get current vote state
       const currentVote = userVoteCache.get(design) || null;
@@ -694,36 +712,34 @@ function initializeEventListeners() {
       saveUserVote(design, newVote);
       updateVotedStateForDesign(design);
       
-      // Update badge optimistically
+      // Update badge optimistically using cache data instead of DOM text
+      const cachedBadges = badgeCache.get(design) || { likes: 0, dislikes: 0, comments: 0 };
+      
+      // Calculate new counts based on cache, not DOM
+      let newLikes = cachedBadges.likes;
+      let newDislikes = cachedBadges.dislikes;
+      
+      if (currentVote === 'like') {
+        newLikes--;
+      } else if (currentVote === 'dislike') {
+        newDislikes--;
+      }
+      
+      if (newVote === 'like') {
+        newLikes++;
+      } else if (newVote === 'dislike') {
+        newDislikes++;
+      }
+      
+      // Update badge cache first
+      updateBadgeCache(design, newLikes, newDislikes, cachedBadges.comments);
+      
+      // Update DOM badges
       const likeBadge = document.getElementById(`like-${design}`);
       const dislikeBadge = document.getElementById(`dislike-${design}`);
       
-      if (likeBadge && dislikeBadge) {
-        const currentLikes = parseInt(likeBadge.textContent) || 0;
-        const currentDislikes = parseInt(dislikeBadge.textContent) || 0;
-        
-        // Calculate new counts
-        let newLikes = currentLikes;
-        let newDislikes = currentDislikes;
-        
-        if (currentVote === 'like') {
-          newLikes--;
-        } else if (currentVote === 'dislike') {
-          newDislikes--;
-        }
-        
-        if (newVote === 'like') {
-          newLikes++;
-        } else if (newVote === 'dislike') {
-          newDislikes++;
-        }
-        
-        likeBadge.textContent = newLikes;
-        dislikeBadge.textContent = newDislikes;
-        
-        // Update badge cache
-        updateBadgeCache(design, newLikes, newDislikes, parseInt(document.getElementById(`comments-${design}`)?.textContent) || 0);
-      }
+      if (likeBadge) likeBadge.textContent = newLikes;
+      if (dislikeBadge) dislikeBadge.textContent = newDislikes;
 
       // Submit vote to Supabase in background
       try {
@@ -732,10 +748,10 @@ function initializeEventListeners() {
           // Revert changes if API call failed
           saveUserVote(design, currentVote);
           updateVotedStateForDesign(design);
-          if (likeBadge && dislikeBadge) {
-            likeBadge.textContent = currentLikes || 0;
-            dislikeBadge.textContent = currentDislikes || 0;
-          }
+          // Revert badge cache and DOM to original state
+          updateBadgeCache(design, cachedBadges.likes, cachedBadges.dislikes, cachedBadges.comments);
+          if (likeBadge) likeBadge.textContent = cachedBadges.likes;
+          if (dislikeBadge) dislikeBadge.textContent = cachedBadges.dislikes;
           console.error('Vote submission failed, reverted changes');
         }
       } catch (error) {
@@ -743,13 +759,18 @@ function initializeEventListeners() {
         // Revert changes on error
         saveUserVote(design, currentVote);
         updateVotedStateForDesign(design);
-        if (likeBadge && dislikeBadge) {
-          likeBadge.textContent = currentLikes || 0;
-          dislikeBadge.textContent = currentDislikes || 0;
-        }
+        // Revert badge cache and DOM to original state
+        updateBadgeCache(design, cachedBadges.likes, cachedBadges.dislikes, cachedBadges.comments);
+        if (likeBadge) likeBadge.textContent = cachedBadges.likes;
+        if (dislikeBadge) dislikeBadge.textContent = cachedBadges.dislikes;
       } finally {
-        // Remove processing state
-        icon.classList.remove('processing');
+        // Remove processing state from ALL voting elements for this design
+        document.querySelectorAll(`[data-design="${design}"]`).forEach(el => {
+          if (el.matches('.feedback-icons i[data-type]') || 
+              el.matches('#lightboxLike, #lightboxDislike, #sidebarLike, #sidebarDislike')) {
+            el.classList.remove('processing');
+          }
+        });
         
         // Update theme stats in background
         setTimeout(() => {
