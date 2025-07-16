@@ -236,9 +236,27 @@ async function submitVote(designId, voteType) {
         }
       } else {
         // User is changing their vote - update it
+        // Get user's display name or email
+        const { data: { user } } = await supabase.auth.getUser();
+        let username = 'Anonymous';
+        
+        if (user) {
+          // Try to get the user's display name from Google metadata
+          if (user.user_metadata && user.user_metadata.full_name) {
+            username = user.user_metadata.full_name;
+          } else if (user.user_metadata && user.user_metadata.name) {
+            username = user.user_metadata.name;
+          } else if (user.email) {
+            username = user.email.split('@')[0];
+          }
+        }
+        
         const { error: updateError } = await supabase
           .from('feedback')
-          .update({ vote_type: voteType })
+          .update({ 
+            vote_type: voteType,
+            username: username
+          })
           .eq('id', existingVote.id);
           
         if (updateError) {
@@ -248,12 +266,33 @@ async function submitVote(designId, voteType) {
       }
     } else {
       // User hasn't voted yet - insert new vote
+      // Get user's display name or email
+      const { data: { user } } = await supabase.auth.getUser();
+      let username = 'Anonymous';
+      
+      if (user) {
+        console.log('User metadata:', user.user_metadata);
+        console.log('User email:', user.email);
+        
+        // Try to get the user's display name from Google metadata
+        if (user.user_metadata && user.user_metadata.full_name) {
+          username = user.user_metadata.full_name;
+        } else if (user.user_metadata && user.user_metadata.name) {
+          username = user.user_metadata.name;
+        } else if (user.email) {
+          username = user.email.split('@')[0];
+        }
+        
+        console.log('Selected username:', username);
+      }
+      
       const { error: insertError } = await supabase
         .from('feedback')
         .insert({
           design_id: designId,
           vote_type: voteType,
-          user_id: userId
+          user_id: userId,
+          username: username
         });
 
       if (insertError) {
@@ -373,6 +412,117 @@ async function getAllFeedback() {
   } catch (error) {
     console.error('Error fetching all feedback:', error);
     return {};
+  }
+}
+
+// Get users who voted for a design
+async function getVotersForDesign(designId) {
+  try {
+    if (!isSupabaseReady()) {
+      console.error('Supabase is not initialized');
+      return { likes: [], dislikes: [] };
+    }
+    
+    const { data, error } = await supabase
+      .from('feedback')
+      .select('username, vote_type, created_at')
+      .eq('design_id', designId)
+      .or('vote_type.eq.like,vote_type.eq.dislike')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching voters:', error);
+      return { likes: [], dislikes: [] };
+    }
+
+    const voters = {
+      likes: [],
+      dislikes: []
+    };
+
+    if (data) {
+      data.forEach(item => {
+        if (item.vote_type === 'like') {
+          voters.likes.push({
+            username: item.username || 'Anonymous',
+            timestamp: item.created_at
+          });
+        } else if (item.vote_type === 'dislike') {
+          voters.dislikes.push({
+            username: item.username || 'Anonymous',
+            timestamp: item.created_at
+          });
+        }
+      });
+    }
+
+    return voters;
+  } catch (error) {
+    console.error('Error getting voters for design:', error);
+    return { likes: [], dislikes: [] };
+  }
+}
+
+// Update anonymous votes with real usernames
+async function updateAnonymousVotes() {
+  try {
+    if (!isSupabaseReady()) {
+      console.error('Supabase is not initialized');
+      return false;
+    }
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+    
+    // Get user's real name
+    let username = 'Anonymous';
+    if (user.user_metadata && user.user_metadata.full_name) {
+      username = user.user_metadata.full_name;
+    } else if (user.user_metadata && user.user_metadata.name) {
+      username = user.user_metadata.name;
+    } else if (user.email) {
+      username = user.email.split('@')[0];
+    }
+    
+    // Find all anonymous votes by this user
+    const { data: anonymousVotes, error } = await supabase
+      .from('feedback')
+      .select('id, design_id, vote_type')
+      .eq('user_id', user.id)
+      .eq('username', 'Anonymous')
+      .or('vote_type.eq.like,vote_type.eq.dislike');
+    
+    if (error) {
+      console.error('Error fetching anonymous votes:', error);
+      return false;
+    }
+    
+    if (anonymousVotes && anonymousVotes.length > 0) {
+      // Update all anonymous votes with real username
+      const { error: updateError } = await supabase
+        .from('feedback')
+        .update({ username: username })
+        .eq('user_id', user.id)
+        .eq('username', 'Anonymous')
+        .or('vote_type.eq.like,vote_type.eq.dislike');
+      
+      if (updateError) {
+        console.error('Error updating anonymous votes:', updateError);
+        return false;
+      }
+      
+      console.log(`Updated ${anonymousVotes.length} anonymous votes with username: ${username}`);
+      return true;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating anonymous votes:', error);
+    return false;
   }
 }
 

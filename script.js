@@ -347,8 +347,48 @@ async function deleteComment(design, commentIndex) {
           allFeedbackCache[design].comments.splice(reversedIndex, 1);
         }
         
-        // Re-render comments
-        renderComments(design);
+        // Re-render comments inline (same logic as lightbox open)
+        const feedback = getFeedbackDataFromCacheSync(design);
+        commentList.innerHTML = '<small>Comments</small>';
+        const comments = (feedback.comments || []).slice().reverse();
+
+        if (comments.length === 0) {
+          commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
+        } else {
+          // Get current user to check if they can delete comments
+          const { data: { user } } = await supabase.auth.getUser();
+          const currentUserId = user?.id;
+
+          comments.forEach((comment, index) => {
+            const div = document.createElement('div');
+            div.className = 'comment';
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = 'comment-username';
+            usernameSpan.textContent = comment.username || 'Anonymous';
+            
+            const textSpan = document.createElement('span');
+            textSpan.className = 'comment-text';
+            textSpan.textContent = comment.text;
+            
+            div.appendChild(usernameSpan);
+            div.appendChild(textSpan);
+            
+            if (currentUserId && comment.user_id === currentUserId) {
+              const deleteSpan = document.createElement('span');
+              deleteSpan.className = 'delete-comment';
+              deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+              
+              deleteSpan.addEventListener('click', () => {
+                deleteComment(design, index);
+              });
+              
+              div.appendChild(deleteSpan);
+            }
+            
+            commentList.appendChild(div);
+          });
+        }
         
         // Update badge cache immediately with new comment count
         const currentCache = badgeCache.get(design) || { likes: 0, dislikes: 0, comments: 0 };
@@ -365,57 +405,7 @@ async function deleteComment(design, commentIndex) {
   }
 }
 
-// Render comments using cached data
-async function renderComments(design) {
-  const feedback = await getFeedbackDataFromCache(design);
-  const comments = (feedback.comments || []).slice().reverse();
 
-  designTitle.innerHTML = `${formatDesignName(design)}`;
-  commentList.innerHTML = '<small>Comments</small>';
-
-  if (comments.length === 0) {
-    commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
-    return;
-  }
-
-  // Get current user to check if they can delete comments
-  const { data: { user } } = await supabase.auth.getUser();
-  const currentUserId = user?.id;
-
-  comments.forEach((comment, index) => {
-    const div = document.createElement('div');
-    div.className = 'comment';
-    
-    // Create username element
-    const usernameSpan = document.createElement('span');
-    usernameSpan.className = 'comment-username';
-    usernameSpan.textContent = comment.username || 'Anonymous';
-    
-    // Create comment text element
-    const textSpan = document.createElement('span');
-    textSpan.className = 'comment-text';
-    textSpan.textContent = comment.text;
-    
-    div.appendChild(usernameSpan);
-    div.appendChild(textSpan);
-    
-    // Only show delete button if user is authenticated and this is their comment
-    if (currentUserId && comment.user_id === currentUserId) {
-      const deleteSpan = document.createElement('span');
-      deleteSpan.className = 'delete-comment';
-      deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
-      
-      // Add click event to delete comment
-      deleteSpan.addEventListener('click', () => {
-        deleteComment(design, index);
-      });
-      
-      div.appendChild(deleteSpan);
-    }
-    
-    commentList.appendChild(div);
-  });
-}
 
 // Get designs for a specific theme
 function getThemeDesigns(themeElement) {
@@ -460,8 +450,8 @@ async function nextDesign() {
   designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
   
   // Update comments immediately with cached data
-  const comments = (feedback.comments || []).slice().reverse();
   commentList.innerHTML = '<small>Comments</small>';
+  const comments = (feedback.comments || []).slice().reverse();
 
   if (comments.length === 0) {
     commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
@@ -514,6 +504,9 @@ async function nextDesign() {
   if (commentBadge) commentBadge.textContent = feedback.comments.length;
   if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
   if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
+  
+  // Update voter dropdowns
+  updateVoterDropdowns(currentDesign);
 }
 
 // Navigate to previous design in slideshow (optimized with cached data)
@@ -543,8 +536,8 @@ async function previousDesign() {
   designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
   
   // Update comments immediately with cached data
-  const comments = (feedback.comments || []).slice().reverse();
   commentList.innerHTML = '<small>Comments</small>';
+  const comments = (feedback.comments || []).slice().reverse();
 
   if (comments.length === 0) {
     commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
@@ -597,10 +590,20 @@ async function previousDesign() {
   if (commentBadge) commentBadge.textContent = feedback.comments.length;
   if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
   if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
+  
+  // Update voter dropdowns
+  updateVoterDropdowns(currentDesign);
 }
 
 // Initialize event listeners for dynamically generated content
+let eventListenersInitialized = false;
+
 function initializeEventListeners() {
+  // Prevent multiple initializations
+  if (eventListenersInitialized) {
+    return;
+  }
+  eventListenersInitialized = true;
   // Thumbnail click → open lightbox and load comments
   document.querySelectorAll('.thumbnail').forEach((thumb) => {
     thumb.addEventListener('click', async () => {
@@ -665,8 +668,8 @@ function initializeEventListeners() {
       designTitle.innerHTML = `${formatDesignName(currentDesign)}`;
       
       // Update comments immediately with cached data
-      const comments = (feedback.comments || []).slice().reverse();
       commentList.innerHTML = '<small>Comments</small>';
+      const comments = (feedback.comments || []).slice().reverse();
 
       if (comments.length === 0) {
         commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
@@ -719,6 +722,9 @@ function initializeEventListeners() {
       if (commentBadge) commentBadge.textContent = feedback.comments.length;
       if (sidebarLikeCount) sidebarLikeCount.textContent = feedback.likes;
       if (sidebarDislikeCount) sidebarDislikeCount.textContent = feedback.dislikes;
+      
+      // Update voter dropdowns
+      updateVoterDropdowns(currentDesign);
     });
   });
 
@@ -849,49 +855,89 @@ function initializeEventListeners() {
   });
 }
 
-// Submit new comment
-submitCommentSidebar.addEventListener('click', async () => {
-  const commentText = commentInputSidebar.value.trim();
-  if (!commentText || !currentDesign) return;
+  // Submit new comment
+  submitCommentSidebar.addEventListener('click', async () => {
+    const commentText = commentInputSidebar.value.trim();
+    if (!commentText || !currentDesign) return;
 
-  // Check if user is authenticated
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    alert('Please sign in to comment');
-    return;
-  }
+    // Check if user is authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert('Please sign in to comment');
+      return;
+    }
 
-  // Submit comment to Supabase using authenticated user's name
-  const success = await submitComment(currentDesign, commentText, user.user_metadata?.full_name || user.email);
-  
-  if (success) {
-    commentInputSidebar.value = '';
+    // Submit comment to Supabase using authenticated user's name
+    const success = await submitComment(currentDesign, commentText, user.user_metadata?.full_name || user.email);
     
-    // Update global cache with new comment
-    if (allFeedbackCache && allFeedbackCache[currentDesign]) {
-      const newComment = {
-        text: commentText,
-        username: user.user_metadata?.full_name || user.email,
-        timestamp: new Date().toISOString(),
-        user_id: user.id
-      };
-      allFeedbackCache[currentDesign].comments.push(newComment);
+    if (success) {
+      commentInputSidebar.value = '';
+      
+      // Update global cache with new comment
+      if (allFeedbackCache && allFeedbackCache[currentDesign]) {
+        const newComment = {
+          text: commentText,
+          username: user.user_metadata?.full_name || user.email,
+          timestamp: new Date().toISOString(),
+          user_id: user.id
+        };
+        allFeedbackCache[currentDesign].comments.push(newComment);
+      }
+      
+      // Refresh comments display
+      const feedback = getFeedbackDataFromCacheSync(currentDesign);
+      commentList.innerHTML = '<small>Comments</small>';
+      const comments = (feedback.comments || []).slice().reverse();
+
+      if (comments.length === 0) {
+        commentList.innerHTML = '<p style="color:#aaa;">No comments yet.</p>';
+      } else {
+        comments.forEach((comment, index) => {
+          const div = document.createElement('div');
+          div.className = 'comment';
+          
+          const usernameSpan = document.createElement('span');
+          usernameSpan.className = 'comment-username';
+          usernameSpan.textContent = comment.username || 'Anonymous';
+          
+          const textSpan = document.createElement('span');
+          textSpan.className = 'comment-text';
+          textSpan.textContent = comment.text;
+          
+          div.appendChild(usernameSpan);
+          div.appendChild(textSpan);
+          
+          if (user && comment.user_id === user.id) {
+            const deleteSpan = document.createElement('span');
+            deleteSpan.className = 'delete-comment';
+            deleteSpan.innerHTML = "<i class='fa-solid fa-trash-alt' title='Delete comment'></i>";
+            
+            deleteSpan.addEventListener('click', () => {
+              deleteComment(currentDesign, index);
+            });
+            
+            div.appendChild(deleteSpan);
+          }
+          
+          commentList.appendChild(div);
+        });
+      }
+      
+      // Update voter dropdowns after comment submission
+      updateVoterDropdowns(currentDesign);
+      
+      // Update badge cache immediately with new comment count
+      const currentCache = badgeCache.get(currentDesign) || { likes: 0, dislikes: 0, comments: 0 };
+      const newCommentCount = currentCache.comments + 1;
+      updateBadgeCache(currentDesign, currentCache.likes, currentCache.dislikes, newCommentCount);
+      
+      // Update the badge display
+      const commentBadge = document.getElementById(`comments-${currentDesign}`);
+      if (commentBadge) {
+        commentBadge.textContent = newCommentCount;
+      }
     }
-    
-    renderComments(currentDesign);
-    
-    // Update badge cache immediately with new comment count
-    const currentCache = badgeCache.get(currentDesign) || { likes: 0, dislikes: 0, comments: 0 };
-    const newCommentCount = currentCache.comments + 1;
-    updateBadgeCache(currentDesign, currentCache.likes, currentCache.dislikes, newCommentCount);
-    
-    // Update the badge display
-    const commentBadge = document.getElementById(`comments-${currentDesign}`);
-    if (commentBadge) {
-      commentBadge.textContent = newCommentCount;
-    }
-  }
-});
+  });
 
 // Close lightbox
 closeBtn.addEventListener('click', () => {
@@ -1077,6 +1123,51 @@ fullImage.addEventListener('dragstart', (e) => {
   e.preventDefault();
 });
 
+// Update voter dropdowns with who voted
+async function updateVoterDropdowns(designId) {
+  try {
+    const voters = await getVotersForDesign(designId);
+    // Update like voters in sidebar
+    const likeVoterList = document.querySelector('.sidebar-like-voters .voter-list');
+    if (likeVoterList) {
+      likeVoterList.innerHTML = '';
+      if (voters.likes.length === 0) {
+        likeVoterList.innerHTML = '<div class="voter-item">No likes yet</div>';
+      } else {
+        voters.likes.forEach(voter => {
+          const voterItem = document.createElement('div');
+          voterItem.className = 'voter-item';
+          voterItem.innerHTML = `
+            <span class="username">${voter.username}</span>
+            <span class="timestamp">${new Date(voter.timestamp).toLocaleDateString('en-GB')}</span>
+          `;
+          likeVoterList.appendChild(voterItem);
+        });
+      }
+    }
+    // Update dislike voters in sidebar
+    const dislikeVoterList = document.querySelector('.sidebar-dislike-voters .voter-list');
+    if (dislikeVoterList) {
+      dislikeVoterList.innerHTML = '';
+      if (voters.dislikes.length === 0) {
+        dislikeVoterList.innerHTML = '<div class="voter-item">No dislikes yet</div>';
+      } else {
+        voters.dislikes.forEach(voter => {
+          const voterItem = document.createElement('div');
+          voterItem.className = 'voter-item';
+          voterItem.innerHTML = `
+            <span class="username">${voter.username}</span>
+            <span class="timestamp">${new Date(voter.timestamp).toLocaleDateString('en-GB')}</span>
+          `;
+          dislikeVoterList.appendChild(voterItem);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error updating voter dropdowns:', error);
+  }
+}
+
 // Reset zoom when navigating to new image
 function resetZoom() {
   isZoomed = false;
@@ -1126,6 +1217,9 @@ function clearUserVoteCache() {
 // Refresh user vote cache when user signs in
 async function refreshUserVoteCache() {
   userVoteCache.clear();
+  
+  // Update anonymous votes with real usernames
+  await updateAnonymousVotes();
   
   // Load all feedback data in one batch call
   const allFeedback = await getAllFeedback();
