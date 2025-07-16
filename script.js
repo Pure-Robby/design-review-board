@@ -638,6 +638,9 @@ function initializeEventListeners() {
       // Update voted state immediately before showing lightbox
       updateVotedState();
       
+      // Reset zoom when opening lightbox
+      resetZoom();
+      
       fullImage.src = thumb.src;
       lightbox.style.display = 'flex';
       
@@ -937,6 +940,142 @@ lightbox.addEventListener('click', (e) => {
   }
 });
 
+// Enhanced zoom functionality with pan
+let isZoomed = false;
+let isPanning = false;
+let hasPanned = false; // Track if we've been panning
+let startX = 0;
+let startY = 0;
+let translateX = 0;
+let translateY = 0;
+const zoomIndicator = document.querySelector('.zoom-indicator');
+const imageWrapper = document.querySelector('.image-wrapper');
+
+// Click to toggle zoom with cursor position
+fullImage.addEventListener('click', (e) => {
+  if (isPanning || hasPanned) {
+    // Reset the pan flag for next interaction
+    hasPanned = false;
+    return; // Don't toggle zoom if we're panning or have panned
+  }
+  
+  if (!isZoomed) {
+    // Zoom in to cursor position
+    const rect = fullImage.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    
+    // Calculate the center of the image
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Calculate the offset to center the clicked point
+    translateX = (centerX - clickX) * 2; // *2 because we're scaling by 2
+    translateY = (centerY - clickY) * 2;
+    
+    // Limit the translation to keep the image visible
+    const maxX = rect.width * 0.5;
+    const maxY = rect.height * 0.5;
+    translateX = Math.max(-maxX, Math.min(maxX, translateX));
+    translateY = Math.max(-maxY, Math.min(maxY, translateY));
+    
+    isZoomed = true;
+    fullImage.style.transform = `scale(2) translate(${translateX}px, ${translateY}px)`;
+    fullImage.style.cursor = 'grab';
+    zoomIndicator.innerHTML = '<i class="fa-solid fa-search-minus"></i> Click to zoom out or drag to pan';
+    imageWrapper.classList.add('panning');
+  } else {
+    // Zoom out
+    isZoomed = false;
+    translateX = 0;
+    translateY = 0;
+    fullImage.style.transform = 'scale(1)';
+    fullImage.style.cursor = 'zoom-in';
+    zoomIndicator.innerHTML = '<i class="fa-solid fa-search-plus"></i> Click to zoom in';
+    imageWrapper.classList.remove('panning');
+  }
+});
+
+// Mouse events for panning
+imageWrapper.addEventListener('mousedown', (e) => {
+  if (!isZoomed) return;
+  
+  e.preventDefault(); // Prevent default drag behavior
+  isPanning = true;
+  hasPanned = false; // Reset pan flag on new pan start
+  startX = e.clientX - translateX;
+  startY = e.clientY - translateY;
+  imageWrapper.style.cursor = 'grabbing';
+});
+
+imageWrapper.addEventListener('mousemove', (e) => {
+  if (!isPanning || !isZoomed) return;
+  
+  e.preventDefault(); // Prevent default drag behavior
+  
+  // Check if we've actually moved (not just a click)
+  const moveDistance = Math.sqrt(
+    Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2)
+  );
+  if (moveDistance > 5) { // 5px threshold to consider it panning
+    hasPanned = true;
+  }
+  
+  translateX = e.clientX - startX;
+  translateY = e.clientY - startY;
+  
+  // Limit panning to image bounds
+  const rect = fullImage.getBoundingClientRect();
+  const maxX = rect.width * 0.5;
+  const maxY = rect.height * 0.5;
+  
+  translateX = Math.max(-maxX, Math.min(maxX, translateX));
+  translateY = Math.max(-maxY, Math.min(maxY, translateY));
+  
+  fullImage.style.transform = `scale(2) translate(${translateX}px, ${translateY}px)`;
+});
+
+imageWrapper.addEventListener('mouseup', (e) => {
+  if (!isZoomed) return;
+  
+  e.preventDefault();
+  isPanning = false;
+  imageWrapper.style.cursor = 'grab';
+  // Keep the zoom state - don't reset it
+});
+
+imageWrapper.addEventListener('mouseleave', (e) => {
+  if (!isZoomed) return;
+  
+  // Only reset panning if we're actually leaving the wrapper
+  // Don't reset if we're just moving over child elements
+  if (e.relatedTarget && imageWrapper.contains(e.relatedTarget)) {
+    return;
+  }
+  
+  isPanning = false;
+  imageWrapper.style.cursor = 'grab';
+  // Keep the zoom state - don't reset it
+});
+
+// Prevent default drag behavior on the image
+fullImage.addEventListener('dragstart', (e) => {
+  e.preventDefault();
+});
+
+// Reset zoom when navigating to new image
+function resetZoom() {
+  isZoomed = false;
+  isPanning = false;
+  translateX = 0;
+  translateY = 0;
+  fullImage.style.transform = 'scale(1)';
+  fullImage.style.cursor = 'zoom-in';
+  imageWrapper.style.cursor = 'grab';
+  imageWrapper.classList.remove('panning');
+  zoomIndicator.innerHTML = '<i class="fa-solid fa-search-plus"></i> Click to zoom in';
+}
+
 document.addEventListener('keydown', (e) => {
   // Don't handle navigation keys if user is typing in a text input
   const activeElement = document.activeElement;
@@ -1163,17 +1302,18 @@ function hasAssetsInFolder(folderName) {
 async function getThemesFromFolder(folderName) {
   const themes = [];
   if (folderName === 'Round 1') {
-    // Dynamically detect theme folders inside Round 1
-    // We'll use a helper to scan the folder structure (simulate for now)
-    const themeFolders = ['theme1', 'theme2', 'theme3', 'theme4', 'theme5'];
+    // Configuration for Round 1 images - update this when files change
+    const round1Config = {
+      'theme1': ['Design 1.png', 'Design 2.png', 'Design 3.png', 'Design 4.png', 'Design 5.png'],
+      'theme2': ['design-1.png', 'design-2.png'],
+      'theme3': ['Design 1.png', 'Design 2.png', 'Design 3.png', 'Design 4.png', 'Design 5.png'],
+      'theme4': ['Design 1.png', 'Design 2.png', 'Design 3.png'],
+      'theme5': ['Design 1.png']
+    };
+    
+    const themeFolders = Object.keys(round1Config);
     for (const theme of themeFolders) {
-      // Simulate reading files in each theme folder
-      let designFiles = [];
-      if (theme === 'theme1') designFiles = ['Design 1.png', 'Design 2.png', 'Design 3.png', 'Design 4.png', 'Design 5.png'];
-      if (theme === 'theme2') designFiles = ['design-1.png', 'design-2.png'];
-      if (theme === 'theme3') designFiles = ['Design 1.png', 'Design 2.png', 'Design 3.png', 'Design 4.png', 'Design 5.png'];
-      if (theme === 'theme4') designFiles = ['Design 1.png', 'Design 2.png', 'Design 3.png'];
-      if (theme === 'theme5') designFiles = ['Design 1.png'];
+      const designFiles = round1Config[theme];
       themes.push({
         name: theme.replace('theme', 'Theme '),
         designs: designFiles.map(file => ({
@@ -1185,12 +1325,15 @@ async function getThemesFromFolder(folderName) {
     }
   } else if (folderName === 'Round 2') {
     // Round 2 themes - these are selected designs for iteration
-    const optionFolders = ['option1', 'option2'];
+    // Configuration for Round 2 images - update this when files change
+    const round2Config = {
+      'option1': ['hoodie-1.jpg'],
+      'option2': ['hoodie-2.jpg']
+    };
+    
+    const optionFolders = Object.keys(round2Config);
     for (const option of optionFolders) {
-      // Use actual image files from the folders
-      let designFiles = [];
-      if (option === 'option1') designFiles = ['hoodie-front.png', 'hoodie-back.png'];
-      if (option === 'option2') designFiles = ['hoodie-front.png', 'hoodie-back.jpg'];
+      const designFiles = round2Config[option];
       
       themes.push({
         name: option.replace('option', 'Option '),
@@ -1198,7 +1341,7 @@ async function getThemesFromFolder(folderName) {
         designs: designFiles.map(file => ({
           id: `${option}/${file}`,
           name: `${option.replace('option', 'Option ')} - ${file.replace(/\.[^/.]+$/, '')}`,
-          src: `assets/Round 2/${option}/${file}`
+          src: `assets/Round 2/${option}/${file}?v=${Date.now()}`
         }))
       });
     }
@@ -1268,7 +1411,7 @@ function createThemeSection(theme) {
         </div>
       </div>
       <div class="design-grid">
-        ${theme.designs.map(design => createDesignHTML(design)).join('')}
+        ${theme.designs.map(design => createDesignHTML(design, theme)).join('')}
       </div>
     </div>
   `;
@@ -1308,12 +1451,13 @@ function getThemeMetadata(themeName) {
 }
 
 // Create design HTML (for direct display)
-function createDesignHTML(design) {
+function createDesignHTML(design, theme = null) {
   const isSelected = selectedDesigns.has(design.id);
   const selectedClass = isSelected ? 'selected-design' : '';
+  const round2Class = theme && theme.parentDesign ? 'round2-item' : '';
   
   return `
-    <div class="design-item ${selectedClass}">
+    <div class="design-item ${selectedClass} ${round2Class}">
       <div class="selection-badge" style="display: ${isSelected ? 'flex' : 'none'};">
         <i class="fa-solid fa-check"></i>
         <span>SELECTED</span>
@@ -1381,6 +1525,7 @@ function createThemeHTML(theme, round) {
   return theme.designs.map(design => {
     const isSelected = selectedDesigns.has(design.id);
     const selectedClass = isSelected ? 'selected-design' : '';
+    const round2Class = round && round.id && round.id.startsWith('round2') ? 'round2-item' : '';
     
     const iterationBadge = theme.parentDesign ? `
       <div class="iteration-badge">
@@ -1390,7 +1535,7 @@ function createThemeHTML(theme, round) {
     ` : '';
     
     return `
-      <div class="design-item ${selectedClass}">
+      <div class="design-item ${selectedClass} ${round2Class}">
         <div class="selection-badge" style="display: ${isSelected ? 'flex' : 'none'};">
           <i class="fa-solid fa-check"></i>
           <span>SELECTED</span>
@@ -1619,3 +1764,10 @@ function toggleRound(roundId) {
 
 // Make toggleRound function globally available
 window.toggleRound = toggleRound;
+
+// Function to manually refresh content (useful for development)
+window.refreshContent = async function() {
+  await scanAssetsAndBuildRounds();
+  await loadSelectedDesigns();
+  updateAdminUI();
+};
