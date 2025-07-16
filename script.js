@@ -644,6 +644,20 @@ function initializeEventListeners() {
       fullImage.src = thumb.src;
       lightbox.style.display = 'flex';
       
+      // Show/hide navigation buttons based on number of designs
+      const prevButton = document.getElementById('prevButton');
+      const nextButton = document.getElementById('nextButton');
+      
+      if (currentThemeDesigns.length <= 1) {
+        // Hide navigation buttons if only one design
+        if (prevButton) prevButton.style.display = 'none';
+        if (nextButton) nextButton.style.display = 'none';
+      } else {
+        // Show navigation buttons if multiple designs
+        if (prevButton) prevButton.style.display = 'block';
+        if (nextButton) nextButton.style.display = 'block';
+      }
+      
       // Use cached data for immediate response (synchronous)
       const feedback = getFeedbackDataFromCacheSync(currentDesign);
       
