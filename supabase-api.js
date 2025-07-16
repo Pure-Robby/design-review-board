@@ -50,33 +50,10 @@ async function getSelectedDesigns() {
   }
 }
 
-// Check if a specific design is selected
-async function isDesignSelected(designId) {
-  try {
-    if (!isSupabaseReady()) {
-      return false;
-    }
-    
-    const { data, error } = await supabase
-      .from('design_selections')
-      .select('*')
-      .eq('design_id', designId)
-      .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking design selection:', error);
-      return false;
-    }
-
-    return !!data;
-  } catch (error) {
-    console.error('Error checking design selection:', error);
-    return false;
-  }
-}
 
 // Mark a design as selected for iteration
-async function markDesignForIteration(designId, selected = true) {
+async function markDesignForIteration(designId, selected = true, currentSelections = null) {
   try {
     if (!isSupabaseReady()) {
       console.error('Supabase is not initialized');
@@ -97,8 +74,20 @@ async function markDesignForIteration(designId, selected = true) {
     }
 
     if (selected) {
-      // Check if already selected
-      const existing = await isDesignSelected(designId);
+      // Check if already selected using passed selections or fallback to database query
+      let existing = false;
+      if (currentSelections && currentSelections.has) {
+        existing = currentSelections.has(designId);
+      } else {
+        // Fallback to database query if no selections passed
+        const { data } = await supabase
+          .from('design_selections')
+          .select('design_id')
+          .eq('design_id', designId)
+          .limit(1);
+        existing = data && data.length > 0;
+      }
+      
       if (existing) {
         return true; // Already selected
       }

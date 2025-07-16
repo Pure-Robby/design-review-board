@@ -58,7 +58,6 @@ function formatDesignName(filename) {
 // Save feedback data to Supabase (async)
 async function saveFeedbackData(designId, feedbackData) {
   // This function is kept for compatibility but will be replaced with specific API functions
-  console.log('saveFeedbackData called - use specific API functions instead');
 }
 
 // Cache for badge data to reduce API calls
@@ -1018,6 +1017,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   
   // Initialize event listeners
   initializeEventListeners();
+  
+  // Update admin UI after selections are loaded
+  updateAdminUI();
 
   // Load all feedback data in one batch call
   const allFeedback = await getAllFeedback();
@@ -1238,9 +1240,6 @@ function renderRoundsFromData() {
   
   // Reinitialize event listeners for the new content
   initializeEventListeners();
-  
-  // Update admin UI after content is rendered
-  updateAdminUI();
 }
 
 // Create a theme section element (for direct display)
@@ -1312,16 +1311,13 @@ function getThemeMetadata(themeName) {
 function createDesignHTML(design) {
   const isSelected = selectedDesigns.has(design.id);
   const selectedClass = isSelected ? 'selected-design' : '';
-  const selectionBadge = isSelected ? `
-    <div class="selection-badge">
-      <i class="fa-solid fa-check"></i>
-      <span>SELECTED</span>
-    </div>
-  ` : '';
   
   return `
     <div class="design-item ${selectedClass}">
-      ${selectionBadge}
+      <div class="selection-badge" style="display: ${isSelected ? 'flex' : 'none'};">
+        <i class="fa-solid fa-check"></i>
+        <span>SELECTED</span>
+      </div>
       <p class="design-name"></p>
       <img
         src="${design.src}"
@@ -1385,12 +1381,6 @@ function createThemeHTML(theme, round) {
   return theme.designs.map(design => {
     const isSelected = selectedDesigns.has(design.id);
     const selectedClass = isSelected ? 'selected-design' : '';
-    const selectionBadge = isSelected ? `
-      <div class="selection-badge">
-        <i class="fa-solid fa-check"></i>
-        <span>SELECTED</span>
-      </div>
-    ` : '';
     
     const iterationBadge = theme.parentDesign ? `
       <div class="iteration-badge">
@@ -1401,7 +1391,10 @@ function createThemeHTML(theme, round) {
     
     return `
       <div class="design-item ${selectedClass}">
-        ${selectionBadge}
+        <div class="selection-badge" style="display: ${isSelected ? 'flex' : 'none'};">
+          <i class="fa-solid fa-check"></i>
+          <span>SELECTED</span>
+        </div>
         <p class="design-name">${design.name}</p>
         <img
           src="${design.src}"
@@ -1436,6 +1429,7 @@ function getTotalDesigns(round) {
 // ==== Admin Selection Functionality ====
 let isAdminUser = false;
 let selectedDesigns = new Set();
+let isUpdatingCheckboxes = false; // Flag to prevent recursive updates
 
 // Check admin status and update UI
 async function checkAdminStatus() {
@@ -1450,16 +1444,35 @@ async function checkAdminStatus() {
 
 // Update UI based on admin status
 function updateAdminUI() {
+  if (isUpdatingCheckboxes) return; // Prevent recursive updates
+  
+  isUpdatingCheckboxes = true;
+  
   const designItems = document.querySelectorAll('.design-item');
   
   designItems.forEach(item => {
     const checkbox = item.querySelector('.admin-checkbox');
     const selectionBadge = item.querySelector('.selection-badge');
+    const designId = item.querySelector('.thumbnail')?.dataset.design;
     
     if (isAdminUser) {
       // Show checkbox for admin users
       if (!checkbox) {
         createAdminCheckbox(item);
+      } else {
+        // Update existing checkbox state
+        const input = checkbox.querySelector('input');
+        if (input && designId) {
+          const shouldBeChecked = selectedDesigns.has(designId);
+          if (input.checked !== shouldBeChecked) {
+            input.checked = shouldBeChecked;
+          }
+          if (selectedDesigns.has(designId)) {
+            item.classList.add('selected-design');
+          } else {
+            item.classList.remove('selected-design');
+          }
+        }
       }
       if (selectionBadge) {
         selectionBadge.style.display = 'none';
@@ -1470,10 +1483,19 @@ function updateAdminUI() {
         checkbox.remove();
       }
       if (selectionBadge) {
-        selectionBadge.style.display = 'flex';
+        selectionBadge.style.display = selectedDesigns.has(designId) ? 'flex' : 'none';
+      }
+      
+      // Update selection state for non-admin users
+      if (designId && selectedDesigns.has(designId)) {
+        item.classList.add('selected-design');
+      } else {
+        item.classList.remove('selected-design');
       }
     }
   });
+  
+  isUpdatingCheckboxes = false;
 }
 
 // Create admin checkbox for a design item
@@ -1492,7 +1514,7 @@ function createAdminCheckbox(designItem) {
   checkbox.className = 'admin-checkbox';
   checkbox.innerHTML = `
     <label class="checkbox-label">
-      <input type="checkbox" data-design="${designId}">
+      <input type="checkbox" id="checkbox-${designId}" name="iteration-${designId}" data-design="${designId}">
       <span class="checkbox-text">Mark for iteration</span>
     </label>
   `;
@@ -1500,8 +1522,10 @@ function createAdminCheckbox(designItem) {
   // Add event listener
   const input = checkbox.querySelector('input');
   input.addEventListener('change', async (e) => {
+    if (isUpdatingCheckboxes) return; // Prevent recursive updates
+    
     const selected = e.target.checked;
-    const success = await markDesignForIteration(designId, selected);
+    const success = await markDesignForIteration(designId, selected, selectedDesigns);
     
     if (success) {
       if (selected) {
@@ -1517,11 +1541,16 @@ function createAdminCheckbox(designItem) {
     }
   });
   
-  // Check if design is already selected (use the loaded selections)
+  // Set checkbox state based on current selections
+  isUpdatingCheckboxes = true;
   if (selectedDesigns.has(designId)) {
     input.checked = true;
     designItem.classList.add('selected-design');
+  } else {
+    input.checked = false;
+    designItem.classList.remove('selected-design');
   }
+  isUpdatingCheckboxes = false;
   
   // Insert checkbox at the top of the design item
   designItem.insertBefore(checkbox, designItem.firstChild);
@@ -1537,15 +1566,28 @@ async function loadSelectedDesigns() {
       selectedDesigns.add(selection.design_id);
     });
     
-    // Update visual state of selected designs
+    // Update visual state of selected designs for all users
     document.querySelectorAll('.design-item').forEach(item => {
       const designId = item.querySelector('.thumbnail')?.dataset.design;
+      const selectionBadge = item.querySelector('.selection-badge');
+      
       if (designId && selectedDesigns.has(designId)) {
         item.classList.add('selected-design');
+        if (selectionBadge) {
+          selectionBadge.style.display = 'flex';
+        }
       } else {
         item.classList.remove('selected-design');
+        if (selectionBadge) {
+          selectionBadge.style.display = 'none';
+        }
       }
     });
+    
+    // Update admin UI state after selections are loaded
+    if (isAdminUser) {
+      updateAdminUI();
+    }
   } catch (error) {
     console.error('Error loading selected designs:', error);
   }
