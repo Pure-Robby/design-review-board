@@ -1010,11 +1010,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Check admin status
   await checkAdminStatus();
   
-  // Load selected designs
-  await loadSelectedDesigns();
-  
   // Build rounds dynamically from folder structure
   await scanAssetsAndBuildRounds();
+  
+  // Load selected designs AFTER content is rendered
+  await loadSelectedDesigns();
   
   // Initialize event listeners
   initializeEventListeners();
@@ -1238,6 +1238,9 @@ function renderRoundsFromData() {
   
   // Reinitialize event listeners for the new content
   initializeEventListeners();
+  
+  // Update admin UI after content is rendered
+  updateAdminUI();
 }
 
 // Create a theme section element (for direct display)
@@ -1514,14 +1517,11 @@ function createAdminCheckbox(designItem) {
     }
   });
   
-  // Check if design is already selected
-  isDesignSelected(designId).then(selected => {
-    if (selected) {
-      input.checked = true;
-      selectedDesigns.add(designId);
-      designItem.classList.add('selected-design');
-    }
-  });
+  // Check if design is already selected (use the loaded selections)
+  if (selectedDesigns.has(designId)) {
+    input.checked = true;
+    designItem.classList.add('selected-design');
+  }
   
   // Insert checkbox at the top of the design item
   designItem.insertBefore(checkbox, designItem.firstChild);
