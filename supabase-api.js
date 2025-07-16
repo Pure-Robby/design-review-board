@@ -5,6 +5,137 @@ function isSupabaseReady() {
   return typeof supabase !== 'undefined' && supabase !== null;
 }
 
+// Check if current user is admin
+async function isUserAdmin() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    
+    // For now, we'll use a simple email-based admin check
+    // In production, you'd want a proper role-based system
+    const adminEmails = [
+      // Add admin email addresses here
+      'robby@puresurvey.co.za'
+    ];
+    
+    return adminEmails.includes(user.email);
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+// Get all selected designs
+async function getSelectedDesigns() {
+  try {
+    if (!isSupabaseReady()) {
+      console.error('Supabase is not initialized');
+      return [];
+    }
+    
+    const { data, error } = await supabase
+      .from('design_selections')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching selected designs:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error getting selected designs:', error);
+    return [];
+  }
+}
+
+// Check if a specific design is selected
+async function isDesignSelected(designId) {
+  try {
+    if (!isSupabaseReady()) {
+      return false;
+    }
+    
+    const { data, error } = await supabase
+      .from('design_selections')
+      .select('*')
+      .eq('design_id', designId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error checking design selection:', error);
+      return false;
+    }
+
+    return !!data;
+  } catch (error) {
+    console.error('Error checking design selection:', error);
+    return false;
+  }
+}
+
+// Mark a design as selected for iteration
+async function markDesignForIteration(designId, selected = true) {
+  try {
+    if (!isSupabaseReady()) {
+      console.error('Supabase is not initialized');
+      return false;
+    }
+    
+    // Check if user is admin
+    const isAdmin = await isUserAdmin();
+    if (!isAdmin) {
+      console.error('User is not admin');
+      return false;
+    }
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('User not authenticated');
+      return false;
+    }
+
+    if (selected) {
+      // Check if already selected
+      const existing = await isDesignSelected(designId);
+      if (existing) {
+        return true; // Already selected
+      }
+      
+      // Mark as selected
+      const { error } = await supabase
+        .from('design_selections')
+        .insert({
+          design_id: designId,
+          selected_by: user.id,
+          selected_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error marking design as selected:', error);
+        return false;
+      }
+    } else {
+      // Remove selection
+      const { error } = await supabase
+        .from('design_selections')
+        .delete()
+        .eq('design_id', designId);
+
+      if (error) {
+        console.error('Error removing design selection:', error);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error marking design for iteration:', error);
+    return false;
+  }
+}
+
 // Get all feedback data for a design
 async function getFeedbackData(designId) {
   try {

@@ -15,6 +15,187 @@ h1 {
   margin: 0 0 4rem;
   line-height: 5rem;
 }
+
+/* ==== Round Sections ==== */
+.round-section {
+  margin-bottom: 3rem;
+}
+
+.round-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  padding: 1rem;
+  background: #333;
+  border: 1px solid #565656;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.round-header:hover {
+  background: #3a3a3a;
+  border-color: #666;
+}
+
+.round-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.round-icon {
+  font-size: 1.2rem;
+  color: #ccc;
+  transition: transform 0.3s ease;
+}
+
+.round-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.round-header h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.round-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #ddd;
+  font-size: 0.9rem;
+}
+
+.round-content {
+  padding: 0 2rem 2rem 2rem;
+  border: 1px solid #565656;
+  border-radius: 1.5rem;
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.round-content.collapsed {
+  max-height: 0;
+  padding: 0 2rem;
+  border: none;
+  margin-top: 0;
+}
+
+.round-description {
+  margin: 0 0 1rem;
+  border-bottom: 1px solid #565656;
+  padding-bottom: 1rem;
+}
+
+.round-description h3 {
+  color: #FFF;
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+}
+
+.round-description .tags {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.round-description .tag {
+  font-size: 0.75rem;
+  color: #333;
+  background: #EEE;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+}
+
+/* ==== Selection and Iteration Badges ==== */
+.selected-design {
+  position: relative;
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.selection-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4caf50;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.iteration-badge {
+  position: relative;
+  background: #2196f3;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  margin-top: 0.75rem;
+}
+
+.iteration-badge i {
+  font-size: 0.6rem;
+}
+
+/* ==== Admin Checkbox Styles ==== */
+.admin-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #4caf50;
+  cursor: pointer;
+}
+
+.checkbox-text {
+  white-space: nowrap;
+  font-size: 0.7rem;
+}
+
+/* Hide selection badge when admin checkbox is present */
+.admin-checkbox + .selection-badge {
+  display: none !important;
+}
+
+/* ==== Legacy Theme Styles (for backward compatibility) ==== */
 .theme {
   margin-bottom: 3rem;
 }
@@ -75,8 +256,8 @@ h1 {
   border: 1px solid #565656;
   border-radius: 1.5rem;
 }
-/* ==== Design Grid ==== */
 
+/* ==== Design Grid ==== */
 
 .design-grid {
   display: flex;
@@ -88,6 +269,7 @@ h1 {
 .design-item {
   text-align: center;
   max-width: 200px;
+  position: relative;
 }
 
 .thumbnail {

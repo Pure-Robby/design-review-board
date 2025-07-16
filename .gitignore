@@ -70,3 +70,6 @@ temp/
 
 # Vercel
 .vercel 
+
+# Dev info
+git-ssh-vs-https-cheat-sheet.md
